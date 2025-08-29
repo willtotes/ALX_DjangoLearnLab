@@ -1,9 +1,9 @@
 from bookshelf.models import Book
 
-view_books = Book.objects.all()
-print(f"Book list: {view_books}")
+book = Book.objects.get(title="1984")
+print(f"Title: {book.title}")
+print(f"Author: {book.author}")
+print(f"Publication Year: {book.publication_year}")
 
-for books in view_books:
-    print(f"Title: {book.title}")
-    print(f"Author: {book.author}")
-    print(f"Publication year: {book.publication_year}")
+all_books = Book.objects.all()
+print(f"Total books: {all_books.count()}")
