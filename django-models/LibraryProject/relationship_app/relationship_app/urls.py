@@ -36,4 +36,13 @@ urlpatterns = [
     path('admin-dashboard/', admin_dashboard, name='admin_dashboard'),
     path('librarian-dashboard/', librarian_dashboard, name='librarian_dashboard'),
     path('member-dashboard/', member_dashboard, name='member_dashboard'),
+    path('books/', views.list_books, name='list_books'),
+    path('books/<int:pk>/', views.book_detail, name='book_detail'),
+    path('books/add/', views.add_book, name='add_book'),
+    path('books/<int:pk>/edit/', views.edit_book, name='edit_book'),
+    path('books/<int:pk>/delete', views.delete_book, name='delete_book'),
+    path('library/<int:library_id>/', views.library_detail, name='library_detail'),
+    path('librarian/', views.librarian_view, name='librarian_view'),
+    path('member/', views.member_view, name='member_view'),
+    path('admin/', views.admin_view, name='admin_view'),
 ]

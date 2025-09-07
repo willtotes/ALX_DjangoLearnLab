@@ -11,14 +11,14 @@ class Author(models.Model):
     
 class Book(models.Model):
     title = models.CharField(max_length=200)
-    author = models.ForeignKey(Author, on_delete=models.CASCADE, related_name="books")
-    publication_year = models.IntegerField()
-    isbn = models.CharField(max_length=13, unique=True)
-    pages = models.IntegerField()
+    author = models.ForeignKey(Author, on_delete=models.CASCADE)
+    publication_year = models.IntegerField(default=2024)
+    isbn = models.CharField(max_length=13, unique=True, default=979138475839)
+    pages = models.IntegerField(default=100)
     cover = models.CharField(max_length=20, choices=[
         ('hard', 'Hardcover'),
         ('soft', 'Softcover'),
-    ])
+    ], default = 'soft')
     language = models.CharField(max_length=30, default='English')
 
     class Meta:
