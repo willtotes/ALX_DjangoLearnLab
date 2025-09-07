@@ -24,7 +24,7 @@ class Book(models.Model):
     class Meta:
         permissions = [
             ('can_add_book', 'Can add book'),
-            ('can_change_bool', 'Can change book'),
+            ('can_change_book', 'Can change book'),
             ('can_delete_book', 'Can delete book'),
         ]
 
@@ -52,8 +52,8 @@ class UserProfile(models.Model):
         ('Member', 'Member'),
     ]
 
-    user = models.OneToOneField(User, on_delete=    models.CASCADE)
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='member')
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='member', help_text='Select the user role for access control')
 
     def __str__(self):
         return f"{self.user.username} - {self.role}"
@@ -65,3 +65,9 @@ def create_or_update_user_profile(sender, instance, created, **kwargs):
     else:
         instance.userprofile.save()
     
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    if hasattr(instance, 'profile'):
+        instance.profile.save()
+    else:
+        UserProfile.objects.create(user=instance)

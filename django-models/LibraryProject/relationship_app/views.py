@@ -18,6 +18,8 @@ from .forms import BookForm
 from django.contrib.auth import login
 from django.urls import reverse_lazy
 from django.views.generic import CreateView
+from django.contrib.auth.decorators import user_passes_test
+from .models import UserProfile
 
 
 def list_books(request):
@@ -78,7 +80,7 @@ def delete_book(request, pk):
     return render(request, 'relationship_app/delete_book.html', {'book': book})
 
 def library_detail(request, library_id):
-    library = get_object_or_404(library, id=library_id)
+    library = get_object_or_404(Library, id=library_id)
     books = library.books.all()
     return render(request, 'relationship_app/library_detail.html', {
         'library': library,
@@ -120,7 +122,7 @@ def register(request):
         if form.is_valid():
             user = form.save()
             login(request, user)
-            return redirect("login")
+            return redirect("dashboard")
     else:
         form = UserCreationForm()
     return render(request, "relationship_app/register.html", {"form": form})
@@ -129,7 +131,22 @@ class CustomLoginView(LoginView):
     template_name = "relationship_app/login.html"
 
     def get_success_url(self):
-        return reverse_lazy('home')
+        return reverse_lazy('dashboard')
 
 class CustomLogoutView(LogoutView):
     template_name = 'relationship_app/logout.html'
+
+@login_required
+def profile_view(request):
+    try:
+        profile = request.user.profile
+        context = {
+            'profile': profile,
+            'username': request.user.username,
+            'email': request.user.email,
+            'date_joined': request.user.date_joined,
+        }
+        return render(request, 'profile.html', context)
+    except UserProfile.DoesNotExist:
+        messages.error(request, 'User profile not found.')
+        return redirect('login')
