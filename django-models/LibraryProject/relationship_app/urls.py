@@ -21,6 +21,7 @@ from . import views
 from .views import register
 from .views import CustomLoginView
 from .views import CustomLogoutView
+from .views import list_books
 from .views_api.admin_view import admin_dashboard
 from .views_api.librarian_view import librarian_dashboard
 from .views_api.member_view import member_dashboard
