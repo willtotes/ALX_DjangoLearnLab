@@ -4,7 +4,7 @@ import django
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "django_models.settings")
 django.setup()
 
-from relationship_app.models import Author, Book, Library, Librarian
+from LibraryProject.relationship_app.relationship_app.models import Author, Book, Library, Librarian
 
 def create_sample_data():
     author1 = Author.objects.create(name="J.K Rowling")
@@ -25,7 +25,7 @@ def create_sample_data():
     return author1, author2, library1, library2
 
 def query_all_books_by_author(author_name="J.K Rowling"):
-    print(f"Query: All books by {author_name}}")
+    print(f"Query: All books by {author_name}")
     try:
         author = Author.objects.get(name=author_name)
         books = Book.objects.filter(author=author)
