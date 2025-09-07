@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.shortcuts import get_object_or_404
-from django.views.generic import DetailView
+from django.views.generic.detail import DetailView
 from .models import Book, Library
 from django.shortcuts import redirect
 from django.contrib.auth.forms import UserCreationForm
