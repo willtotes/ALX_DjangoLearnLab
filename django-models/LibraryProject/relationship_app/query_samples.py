@@ -39,7 +39,7 @@ def query_all_books_by_author():
 def list_all_books_in_library(library_name="Central Public Library"):
     print(f"Query: All books in {library_name}")
     try:
-        library = Library.objects.get(name="Central Public Library")
+        library = Library.objects.get(name=library_name)
         books = library.books.all()
         for book in books:
             print(f"_ {book.title} (by {book.author.name})")
