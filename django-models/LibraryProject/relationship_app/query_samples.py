@@ -36,8 +36,8 @@ def query_all_books_by_author():
         print("Author not found")
         return []
 
-def list_all_books_in_library():
-    print("Query: All books in Central Public Library")
+def list_all_books_in_library(library_name="Central Public Library"):
+    print(f"Query: All books in {library_name}")
     try:
         library = Library.objects.get(name="Central Public Library")
         books = library.books.all()
