@@ -31,7 +31,7 @@ urlpatterns = [
     path('books/', views.list_books, name='list_books'),
     path('library/<int:pk>/', views.LibraryDetailView.as_view(), name='library_detail'),
     #path('relationship_app/', include('relationship_app.urls')),
-    path('register/', register, name='register'),
+    path('register/', views.CustomLoginView.as_view(), name='register'),
     path('login/', CustomLoginView.as_view(), name='login'),
     path('logout/', CustomLogoutView.as_view(), name='logout'),
     path('admin-dashboard/', admin_dashboard, name='admin_dashboard'),

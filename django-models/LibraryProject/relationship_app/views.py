@@ -15,6 +15,10 @@ from .models import Author
 from .models import Library
 from .models import Librarian
 from .forms import BookForm
+from django.contrib.auth import login
+from django.urls import reverse_lazy
+from django.views.generic import CreateView
+
 
 def list_books(request):
     books = Book.objects.all()
@@ -105,6 +109,11 @@ class LibraryDetailView(DetailView):
     template_name = 'library_detail.html'
     context_object_name = 'library'
 
+class RegisterView(CreateView):
+    form_class = UserCreationForm
+    template_name = 'relationship/register.html'
+    success_url = reverse_lazy('login')
+
 def register(request):
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
@@ -117,6 +126,9 @@ def register(request):
 
 class CustomLoginView(LoginView):
     template_name = "relationship_app/login.html"
+
+    def get_success_url(self):
+        return reverse_lazy('home')
 
 class CustomLogoutView(LogoutView):
     template_name = 'relationship_app/logout.html'
