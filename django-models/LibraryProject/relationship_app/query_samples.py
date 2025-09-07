@@ -24,10 +24,10 @@ def create_sample_data():
 
     return author1, author2, library1, library2
 
-def query_all_books_by_author():
-    print("Query: All books by J.K Rowling")
+def query_all_books_by_author(author_name="J.K Rowling"):
+    print(f"Query: All books by {author_name}}")
     try:
-        author = Author.objects.get(name="J.K Rowling")
+        author = Author.objects.get(name=author_name)
         books = Book.objects.filter(author=author)
         for book in books:
             print(f"_ {book.title}")
@@ -48,8 +48,8 @@ def list_all_books_in_library(library_name="Central Public Library"):
         print("Library not found")
         return []
 
-def retrieve_librarian_for_library():
-    print("Query: Librarian for Central Public Library")
+def retrieve_librarian_for_library(library_name="Central Public Library"):
+    print(f"Query: Librarian for {library_name}")
     try:
         library = Library.objects.get(name="Central Public Library")
         librarian = Librarian.objects.get(library=library)
