@@ -21,7 +21,6 @@ from django.views.generic import CreateView
 from django.contrib.auth.decorators import user_passes_test
 from .models import UserProfile
 
-
 def list_books(request):
     books = Book.objects.all()
     return render(request, 'relationship_app/list_books.html', {'books': books})
@@ -47,7 +46,7 @@ def add_book(request):
     return render(request, 'relationship_app/add_book.html', {'form': form})
 
 @login_required
-@permission_required('relationship.can_change_book', raise_exception=True)
+@permission_required('relationship_app.can_change_book', raise_exception=True)
 def edit_book(request, pk):
     book = get_object_or_404(Book, pk=pk)
 
