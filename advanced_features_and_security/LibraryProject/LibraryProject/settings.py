@@ -162,6 +162,7 @@ else:
     SESSION_COOKIE_SECURE = False
     SECURE_SSL_REDIRECT = False
     SECURE_HSTS_SECONDS = 0 
+    SECURE_PROXY_SSL_HEADER = None
 
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
@@ -181,3 +182,7 @@ CSP_FONT_SRC = ("'self'",)
 CSP_OBJECT_SRC = ("'none'",)
 CSP_BASE_URI = ("'self'",)
 CSP_FRAME_ANCESTORS = ("'none'",)
+
+if is_production():
+    USE_X_FORWARDED_HOST = True
+    USE_X_FORWARDED_PORT = True

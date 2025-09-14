@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.db import models
 from django.http import HttpResponseForbidden, JsonResponse
 from .models import Book, Author
-from .forms import AuthorForm, BookForm
+from .forms import AuthorForm, BookForm, ExampleForm
 import re
 
 # Create your views here.
