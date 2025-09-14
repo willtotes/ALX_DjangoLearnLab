@@ -1,17 +1,9 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.contrib.auth.models import AbstractUser, BaseUserManager, Permission
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
 
 # Create your models here.
-class Book(models.Model):
-    title = models.CharField(max_length=200)
-    author = models.CharField(max_length=100)
-    publication_year = models.IntegerField()
-
-    def __str__(self):
-        return f"{self.title} by {self.author}, {self.publication_year}"
-        
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:
@@ -41,6 +33,7 @@ class CustomUser(AbstractUser):
     date_of_birth = models.DateField(_('date of birth'), null=True, blank=True)
     profile_photo = models.ImageField(
         _('profile photo'),
+        upload_to='profile_photos/',
         null=True,
         blank=True,
         help_text=_('Upload a profile photo')
@@ -57,6 +50,42 @@ class CustomUser(AbstractUser):
     class Meta:
         verbose_name = _('user')
         verbose_name_plural = _('users')
+class Book(models.Model):
+    title = models.CharField(max_length=200)
+    author = models.CharField(max_length=100)
+    publication_year = models.IntegerField()
+    isbn = models.CharField(max_length=13, unique=True, null=True, blank=True)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
+
+    class Meta:
+        permissions = [
+            ("can_view_book", "Can view book details"),
+            ("can_create_book", "Can create new books"),
+            ("can_edit_book", "Can edit existing books"),
+            ("can_delete_book", "Can delete books"),
+        ]
+
+    def __str__(self):
+        return self.title
+    
+class Author(models.Model):
+    name = models.CharField(max_length=100)
+    bio = models.TextField(blank=True)
+    birth_date = models.DateField(null=True, blank=True)
+    death_date = models.DateField(null=True, blank=True)
+
+    class Meta:
+        permissions = [
+            ("can_view_author", "Can view author details"),
+            ("can_create_author", "Can create new authors"),
+            ("can_edit_author", "Can edit existing authors"),
+            ("can_delete_author", "Can delete authors"),
+        ]
+
+    def __str__(self):
+        return self.name
 
 class Post(models.Model):
     author = models.ForeignKey(
