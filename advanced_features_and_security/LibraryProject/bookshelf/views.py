@@ -4,7 +4,8 @@ from django.contrib import messages
 from django.db import models
 from django.http import HttpResponseForbidden, JsonResponse
 from .models import Book, Author
-from .forms import AuthorForm, BookForm, ExampleForm
+from .forms import AuthorForm, BookForm
+from .forms import ExampleForm
 import re
 
 # Create your views here.
@@ -152,4 +153,3 @@ def contact_us(request):
     else:
         form = ExampleForm()
     return render(request, 'bookshelf/contact.html', {'form': form})
-    
