@@ -142,3 +142,14 @@ def safe_redirect(request):
         next_url = '/'
 
     return redirect(next_url)
+
+def contact_us(request):
+    if request.method == 'POST':
+        form = ExampleForm(request.POST)
+        if form.is_valid()
+        messages.success(request, "Thank you for your message! We will get back to you soon.")
+        return redirect('book_list')
+    else:
+        form = ExampleForm()
+    return render(request, 'bookshelf/contact.html', {'form': form})
+    
