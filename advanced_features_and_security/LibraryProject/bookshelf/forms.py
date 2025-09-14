@@ -67,3 +67,68 @@ class SecureBookForm(forms.ModelForm):
             if isbn and not re.match(r'^[0-9-]{10,17}$', isbn):
                 raise forms.ValidationError("Invalid ISBN format")
             return isbn
+        
+class ExampleForm(forms.Form):
+    name = forms.CharField(
+        max_length=100,
+        required=True,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter your name'})
+    )
+
+    email = forms.EmailField(
+        required=True,
+        widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': "Enter your email"})
+    )
+
+    age = forms.IntegerField(
+        required=True,
+        min_value=0,
+        max_value=150,
+        widget=forms.NumberInput(attrs={'class': 'form-control'})
+    )
+
+    agree_to_terms = forms.BooleanField(
+        required=True,
+        label="I agree to the terms and conditions"
+    )
+    
+    MESSAGE_CHOICES = [
+        ('general', 'General Inquiry'),
+        ('support', 'Technical Support'),
+        ('feedback', 'Feedback'),
+        ('complaint', 'Complaint'),
+    ]
+    
+    message_type = forms.ChoiceField(
+        choices=MESSAGE_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    
+    message = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Enter your message'})
+    )
+    
+    def clean_name(self):
+        name = self.cleaned_data['name']
+        if len(name.strip()) < 2:
+            raise forms.ValidationError("Name must be at least 2 characters long.")
+        return name.strip()
+    
+    def clean_email(self):
+        email = self.cleaned_data['email']
+        if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
+            raise forms.ValidationError("Please enter a valid email address.")
+        return email
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        message_type = cleaned_data.get('message_type')
+        message = cleaned_data.get('message')
+        
+        if message_type in ['feedback', 'complaint'] and not message:
+            raise forms.ValidationError({
+                'message': "This message type requires a detailed message."
+            })
+        
+        return cleaned_data
