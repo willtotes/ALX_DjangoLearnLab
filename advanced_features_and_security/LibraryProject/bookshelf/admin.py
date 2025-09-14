@@ -5,7 +5,7 @@ from .models import CustomUser
 from django.utils.safestring import mark_safe
 
 # Register your models here.
-class CustomUserAmin(UserAdmin):
+class CustomUserAdmin(UserAdmin):
     model = CustomUser
     list_display = ['email', 'first_name', 'last_name', 'is_staff', 'is_active']
     list_filter = ['is_staff', 'is_active', 'date_joined']
@@ -64,6 +64,6 @@ class CustomUserAmin(UserAdmin):
     profile_photo_preview.short_description = _("Profile Photo Preview")
 
 admin.site.register(CustomUser, CustomUserAmin)
-    
+
 
 
