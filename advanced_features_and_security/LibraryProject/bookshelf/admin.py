@@ -63,7 +63,7 @@ class CustomUserAdmin(UserAdmin):
 
     profile_photo_preview.short_description = _("Profile Photo Preview")
 
-admin.site.register(CustomUser, CustomUserAmin)
+admin.site.register(CustomUser, CustomUserAdmin)
 
 
 
