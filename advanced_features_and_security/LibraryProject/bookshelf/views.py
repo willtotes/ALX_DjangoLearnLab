@@ -147,8 +147,8 @@ def safe_redirect(request):
 def contact_us(request):
     if request.method == 'POST':
         form = ExampleForm(request.POST)
-        if form.is_valid()
-        messages.success(request, "Thank you for your message! We will get back to you soon.")
+        if form.is_valid():
+            messages.success(request, "Thank you for your message! We will get back to you soon.")
         return redirect('book_list')
     else:
         form = ExampleForm()
