@@ -3,6 +3,7 @@ from .models import Author, Book
 from .serializers import AuthorSerializer, BookSerializer
 from rest_framework import generics, permissions, status, filters
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from django_filters.rest_framework import DjangoFilterBackend
 from django_filters import rest_framework
 from django.db.models import Q
@@ -26,7 +27,7 @@ class AuthorListCreateView(generics.ListCreateAPIView):
 class BookListCreateView(generics.ListCreateAPIView):
     queryset = Book.objects.all().select_related('author')
     serializer_class = BookSerializer
-    #permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthenticatedOrReadOnly]
     filter_backends = [rest_framework.DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = BookFilter
     filterset_fields = ['publication_year', 'author__id']
@@ -109,7 +110,7 @@ class BookDetailView(generics.RetrieveAPIView):
 class BookCreateView(generics.CreateAPIView):
     queryset = Book.objects.all()
     serializer_class = BookSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
         response = super().create(request, *args, **kwargs)
@@ -122,7 +123,7 @@ class BookCreateView(generics.CreateAPIView):
 class BookUpdateView(generics.UpdateAPIView):
     queryset = Book.objects.all().select_related('author')
     serializer_class = BookSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     lookup_field = 'pk'
 
     def update(self, request, *args, **kwargs):
@@ -136,7 +137,7 @@ class BookUpdateView(generics.UpdateAPIView):
 class BookDeleteView(generics.DestroyAPIView):
     queryset = Book.objects.all()
     serializer_class = BookSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     lookup_field = 'pk'
 
     def destroy(self, request, *args, **kwargs):
@@ -159,7 +160,7 @@ class BookRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     def get_permissions(self):
         if self.request.method == 'GET':
             return [permissions.AllowAny()]
-        return [permissions.IsAuthenticated()]
+        return [IsAuthenticated()]
     
     def update(self, request, *args, **kwargs):
         response = super().update(request, *args, **kwargs)
@@ -189,4 +190,4 @@ class AuthorRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     def get_permissions(self):
         if self.request.method == 'GET':
             return [permissions.AllowAny()]
-        return [permissions.IsAuthenticated()]
+        return [IsAuthenticated()]
