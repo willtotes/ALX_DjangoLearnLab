@@ -75,6 +75,19 @@ class BookCRUDTest(BaseTestCase):
         self.assertEqual(response.data['title'], self.book1.title)
         self.assertEqual(response.data['publication_year'], self.book1.publication_year)
 
+    def test_create_book_authenticated_with_login(self):
+        login_success = self.client.login(username='testuser', password='testpass123')
+        self.assertTrue(login_success)
+
+        book_data = {
+            'title': 'Login Test Book',
+            'publication_year': 2023,
+            'author': self.author1.id
+        }
+        response = self.client.post(self.book_combined_url, book_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['data']['title'], book_data['title'])
+
     def test_create_book_authenticated(self):
         self.authenticate_user(self.regular_user)
 
@@ -96,6 +109,19 @@ class BookCRUDTest(BaseTestCase):
         }
         response = self.client.post(self.book_list_url, book_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_update_book_with_login(self):
+        login_success = self.client.login(username='testuser', password='testpass123')
+        self.assertTrue(login_success)
+
+        update_data = {
+            'title': 'Login Updated Title',
+            'publication_year': 1998,
+            'author': self.author1.id
+        }
+        url = self.book_detail_url(self.book1.id)
+        response = self.client.put(url, update_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_update_book_authenticated(self):
         self.authenticate_user(self.regular_user)
@@ -199,6 +225,16 @@ class AuthorCRUDTests(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['name'], self.author1.name)
         self.assertIn('books', response.data)
+
+    def test_create_author_with_login(self):
+        login_success = self.client.login(username='testuser', password='testpass123')
+        self.assertTrue(login_success)
+
+        author_data = {
+            'name': 'Login Test Author'
+        }
+        response = self.client.post(self.author_list_url, author_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     def test_create_author_authenticated(self):
         self.authenticate_user(self.regular_user)

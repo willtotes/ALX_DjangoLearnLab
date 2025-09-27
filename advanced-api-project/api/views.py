@@ -1,11 +1,10 @@
 from django.shortcuts import render
 from .models import Author, Book
 from .serializers import AuthorSerializer, BookSerializer
-from rest_framework import generics, permissions, status
+from rest_framework import generics, permissions, status, filters
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django_filters import rest_framework
-from rest_framework.filters import SearchFilter, OrderingFilter
 from django.db.models import Q
 from .filters import BookFilter, AuthorFilter
 
@@ -13,7 +12,7 @@ from .filters import BookFilter, AuthorFilter
 class AuthorListCreateView(generics.ListCreateAPIView):
     queryset = Author.objects.all().prefetch_related('books')
     serializer_class = AuthorSerializer
-    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = AuthorFilter
     search_fields = ['name']
     ordering_fields = ['name', 'created_at']
@@ -28,7 +27,7 @@ class BookListCreateView(generics.ListCreateAPIView):
     queryset = Book.objects.all().select_related('author')
     serializer_class = BookSerializer
     #permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    filter_backends = [rest_framework.DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filter_backends = [rest_framework.DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = BookFilter
     filterset_fields = ['publication_year', 'author__id']
     search_fields = ['title', 'author__name']
@@ -94,7 +93,7 @@ class BookListView(generics.ListAPIView):
     queryset = Book.objects.all().select_related('author')
     serializer_class = BookSerializer
     permission_classes = [permissions.AllowAny]
-    filter_backends = [rest_framework.DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filter_backends = [rest_framework.DjangoFilterBackend,filters. SearchFilter, filters.OrderingFilter]
     filterset_class = BookFilter
     filterset_fields = ['publication_year', 'author__id']
     search_fields = ['title', 'author__name']
