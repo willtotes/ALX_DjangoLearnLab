@@ -1,0 +1,31 @@
+{% extends "blog/base.html" %}
+
+{% block title %}Popular Tags - Django Blog{% endblock %}
+
+{% block content %}
+<div class="tags-header">
+    <h1>Popular Tags</h1>
+    <p>Browse posts by popular topics and categories</p>
+</div>
+
+{% if popular_tags %}
+<div class="tags-cloud">
+    {% for tag in popular_tags %}
+    <a href="{% url 'tagged-posts' tag.name %}" class="tag tag-large" style="font-size: {{ tag.num_times|add:10 }}px;">
+        {{ tag.name }} <span class="tag-count">({{ tag.num_times }})</span>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div class="no-tags">
+    <div class="alert alert-info">
+        <h3>No tags yet</h3>
+        <p>Tags will appear here as they are added to posts. <a href="{% url 'post-create' %}">Create a post</a> to add the first tags!</p>
+    </div>
+</div>
+{% endif %}
+
+<div class="tags-actions">
+    <a href="{% url 'post-list' %}" class="btn btn-primary">← Back to all posts</a>
+</div>
+{% endblock %}

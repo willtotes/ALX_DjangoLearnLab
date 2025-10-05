@@ -1,0 +1,75 @@
+{% extends "blog/base.html" %}
+
+{% block title %}Posts tagged "{{ tag }}" - Django Blog{% endblock %}
+
+{% block content %}
+<div class="tagged-posts-header">
+    <h1>Posts tagged "{{ tag }}"</h1>
+    <div class="tag-info">
+        <p>Found <strong>{{ posts.count }}</strong> post{{ posts.count|pluralize }} with this tag</p>
+        <div class="tag-actions">
+            <a href="{% url 'post-list' %}" class="btn btn-outline">← Back to all posts</a>
+            <a href="{% url 'popular-tags' %}" class="btn btn-outline">Browse all tags</a>
+        </div>
+    </div>
+</div>
+
+{% if posts %}
+    <div class="posts-list">
+        {% for post in posts %}
+        <article class="post-item">
+            <h2><a href="{% url 'post-detail' post.pk %}">{{ post.title }}</a></h2>
+            <div class="post-meta">
+                <span class="author">By {{ post.author.username }}</span>
+                <span class="date">{{ post.published_date|date:"F d, Y" }}</span>
+            </div>
+            
+            <div class="post-tags-small">
+                {% for post_tag in post.tags.all %}
+                <a href="{% url 'tagged-posts' post_tag.name %}" class="tag tag-small {% if post_tag.name == tag %}tag-active{% endif %}">
+                    {{ post_tag.name }}
+                </a>
+                {% endfor %}
+            </div>
+            
+            <div class="post-excerpt">
+                {{ post.excerpt }}
+            </div>
+            <div class="post-actions">
+                <a href="{% url 'post-detail' post.pk %}" class="read-more">Read more →</a>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+
+    {% if is_paginated %}
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+            <a href="?page=1" class="btn btn-outline">First</a>
+            <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-outline">Previous</a>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+                <a href="?page={{ num }}" class="btn btn-primary">{{ num }}</a>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a href="?page={{ num }}" class="btn btn-outline">{{ num }}</a>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="btn btn-outline">Next</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}" class="btn btn-outline">Last</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+{% else %}
+    <div class="no-posts">
+        <div class="alert alert-info">
+            <h3>No posts found with this tag</h3>
+            <p>There are no posts tagged "{{ tag }}". <a href="{% url 'post-list' %}">Browse all posts</a> or <a href="{% url 'popular-tags' %}">check popular tags</a>.</p>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,91 @@
+{% extends "blog/base.html" %}
+
+{% block title %}Search Results{% if query %} for "{{ query }}"{% endif %} - Django Blog{% endblock %}
+
+{% block content %}
+<div class="search-results-header">
+    <h1>Search Results</h1>
+    
+    {% if query %}
+    <div class="search-info">
+        <p>Found <strong>{{ results_count }}</strong> result{{ results_count|pluralize }} for "<strong>{{ query }}</strong>"</p>
+        <a href="{% url 'post-list' %}" class="btn btn-outline">← Back to all posts</a>
+    </div>
+    {% endif %}
+</div>
+
+{% if posts %}
+    <div class="posts-list">
+        {% for post in posts %}
+        <article class="post-item">
+            <h2><a href="{% url 'post-detail' post.pk %}">{{ post.title }}</a></h2>
+            <div class="post-meta">
+                <span class="author">By {{ post.author.username }}</span>
+                <span class="date">{{ post.published_date|date:"F d, Y" }}</span>
+            </div>
+            
+            {% with post.tags.all as post_tags %}
+                {% if post_tags %}
+                <div class="post-tags-small">
+                    {% for tag in post_tags %}
+                    <a href="{% url 'tagged-posts' tag.name %}" class="tag tag-small">{{ tag.name }}</a>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            {% endwith %}
+            
+            <div class="post-excerpt">
+                {{ post.excerpt }}
+            </div>
+            <div class="post-actions">
+                <a href="{% url 'post-detail' post.pk %}" class="read-more">Read more →</a>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+
+    {% if is_paginated %}
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+            <a href="?q={{ query }}&page=1" class="btn btn-outline">First</a>
+            <a href="?q={{ query }}&page={{ page_obj.previous_page_number }}" class="btn btn-outline">Previous</a>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+                <a href="?q={{ query }}&page={{ num }}" class="btn btn-primary">{{ num }}</a>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a href="?q={{ query }}&page={{ num }}" class="btn btn-outline">{{ num }}</a>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+            <a href="?q={{ query }}&page={{ page_obj.next_page_number }}" class="btn btn-outline">Next</a>
+            <a href="?q={{ query }}&page={{ page_obj.paginator.num_pages }}" class="btn btn-outline">Last</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+{% else %}
+    <div class="no-results">
+        <div class="alert alert-info">
+            <h3>No results found</h3>
+            {% if query %}
+            <p>No posts found matching "<strong>{{ query }}</strong>". Try different keywords or browse our <a href="{% url 'popular-tags' %}">popular tags</a>.</p>
+            {% else %}
+            <p>Please enter a search term to find posts.</p>
+            {% endif %}
+        </div>
+        
+        <div class="search-suggestions">
+            <h4>Search Tips:</h4>
+            <ul>
+                <li>Try different keywords or more general terms</li>
+                <li>Check your spelling</li>
+                <li>Search by tags like "django" or "python"</li>
+                <li>Browse <a href="{% url 'popular-tags' %}">popular tags</a> to discover content</li>
+            </ul>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}
