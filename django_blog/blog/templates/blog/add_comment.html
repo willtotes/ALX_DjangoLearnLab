@@ -33,7 +33,7 @@
         
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">Submit Comment</button>
-            <a href="{% url 'post-detail' request.resolver_match.kwargs.post_id %}" class="btn btn-secondary">Cancel</a>
+            <a href="{% url 'post-detail' request.resolver_match.kwargs.pk %}" class="btn btn-secondary">Cancel</a>
         </div>
     </form>
 </div>
