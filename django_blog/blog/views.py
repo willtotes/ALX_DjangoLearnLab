@@ -284,12 +284,12 @@ class PostByTagListView(ListView):
     paginate_by = 5
 
     def get_queryset(self):
-        tag_name = self.kwargs.get('tag')
+        tag_name = self.kwargs['tag_slug']
         return Post.objects.filter(tags__name__in=[tag_name]).order_by('-published_date')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['tag'] = self.kwargs.get('tag')
+        context['tag'] = self.kwargs['tag_slug']
         return context
     
 def popular_tags(request):
