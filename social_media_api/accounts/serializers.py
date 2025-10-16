@@ -1,7 +1,10 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth import get_user_model
 from .models import CustomUser
+from rest_framework.authtoken.models import Token
+
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8, validators=[validate_password])
@@ -21,14 +24,19 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data.pop('password2')
-        user = CustomUser.objects.create_user(
+        user = get_user_model().objects.create_user(
             username=validated_data['username'],
             email=validated_data['email'],
             password=validated_data['password'],
             first_name=validated_data.get('first_name', ''),
             last_name=validated_data.get('last_name', '')
         )
+        Token.objects.create(user=user)
         return user
+
+    def get_token(self, obj):
+        token = Token.objects.get(user=obj)
+        return token.key
 
 class UserLoginSerializer(serializers.Serializer):
     username = serializers.CharField()
@@ -42,9 +50,14 @@ class UserLoginSerializer(serializers.Serializer):
             user = authenticate(username=username, password=password)
             if not user:
                 raise serializers.ValidationError('Unable to log in with provided credentials.')
+            token, created = token.objects.get_or_create(user=user)
             attrs['user'] = user
+            attrs['token'] = token
             return attrs
         raise serializers.ValidationError('Must include "username" and "password".')
+    
+    def get_token(self, obj):
+        return obj.get('token').key if obj.get('token') else None
 
 class UserProfileSerializer(serializers.ModelSerializer):
     followers_count = serializers.ReadOnlyField()
@@ -124,3 +137,7 @@ class FollowActionSerializer(serializers.Serializer):
         
         return value
     
+class CustomUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'username', 'email', 'bio', 'profile_picture']

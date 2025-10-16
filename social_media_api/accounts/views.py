@@ -1,16 +1,68 @@
+from rest_framework.authtoken.models import Token
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
-from rest_framework import status, generics
+from rest_framework import status, generics, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.authtoken.models import Token
 from .models import CustomUser
-from .serializers import UserRegistrationSerializer, UserLoginSerializer, UserProfileSerializer, UserUpdateSerializer, FollowActionSerializer, UserDetailSerializer, UserFollowSerializer
+from .serializers import UserRegistrationSerializer, UserLoginSerializer, UserProfileSerializer, UserUpdateSerializer, FollowActionSerializer, UserDetailSerializer, UserFollowSerializer, CustomUserSerializer
 from notifications.models import Notification
 
 # Create your views here.
+class UserRegistrationAPIView(generics.GenericAPIView):
+    queryset = CustomUser.objects.all()
+    serializer_class = UserRegistrationSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            return Response({
+                'user': CustomUserSerializer(user, context=self.get_serializer_context()).data,
+                'message': 'User created successfully'
+            }, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class UserLoginAPIView(generics.GenericAPIView):
+    serializer_class = UserLoginSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            user = authenticate(
+                username = serializer.validated_data['username'],
+                password=serializer.validated_data['password']
+            )
+            if user:
+                login(request, user)
+                return Response({
+                    'user': CustomUserSerializer(user, context=self.get_serializer_context()).data,
+                    'message': 'Login successful!'
+                })
+            return Response({'error': 'invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class UserProfileView(generics.GenericAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = CustomUser.objects.all()
+    serializer_class = CustomUserSerializer
+
+    def get(self, request, *args, **kwargs):
+        serializer = self.get_serializer(request.user)
+        return Response(serializer.data)
+
+    def put(self, request, *args, **kwargs):
+        serializer = self.get_serializer(request.user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 def register_view(request):
     if request.user.is_authenticated:
         return redirect('feed')
@@ -155,3 +207,4 @@ def user_search(request):
     users = CustomUser.objects.filter(username__icontains=query)[:10]
     serializer = UserFollowSerializer(users, many = True, context = {'request': request})
     return Response(serializer.data)
+

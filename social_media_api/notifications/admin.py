@@ -4,11 +4,11 @@ from .models import Notification
 # Register your models here.
 @admin.register(Notification)
 class NotificationAdmin(admin.ModelAdmin):
-    list_display = ('id', 'recipient', 'actor', 'verb', 'read', 'created_at')
-    list_filter = ('verb', 'read', 'created_at')
+    list_display = ('id', 'recipient', 'actor', 'verb', 'read', 'timestamp')
+    list_filter = ('verb', 'read', 'timestamp')
     search_fields = ('recipient__username', 'actor__username')
-    readonly_fields = ('created_at',)
-    date_hierarchy = 'created_at'
+    readonly_fields = ('timestamp',)
+    date_hierarchy = 'timestamp'
 
     fieldsets = (
         ('Base Information', {

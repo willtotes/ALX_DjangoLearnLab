@@ -17,7 +17,7 @@ class Notification(models.Model):
     actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='actions')
     verb = models.CharField(max_length=50, choices=NOTIFICATION_TYPES)
     read = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
 
     target_content_type = models.ForeignKey(
         ContentType,
@@ -30,9 +30,9 @@ class Notification(models.Model):
     data = models.JSONField(default=dict, blank=True)
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ['-timestamp']
         indexes = [
-            models.Index(fields=['recipient', 'read', 'created_at']),
+            models.Index(fields=['recipient', 'read', 'timestamp']),
         ]
 
     def __str__(self):
