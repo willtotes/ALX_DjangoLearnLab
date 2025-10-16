@@ -3,6 +3,8 @@ from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404
+from rest_framework import generics, permissions
 from rest_framework import viewsets, status, filters
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
@@ -133,13 +135,11 @@ class CommentViewSet(viewsets.ModelViewSet):
     
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([permissions.IsAuthenticated])
 def user_feed(request):
     following_users = request.user.following.all()
-    posts = Post.objects.filter(author__in=following_users)\
-                        .select_related('author')\
-                        .prefetch_related('likes', 'comments')\
-                        .order_by('-created_at')
+    posts = Post.objects.filter(author__in=following_users).order_by('-created_at')
+    posts = posts.select_related('author').prefetch_related('likes', 'comments')
 
     paginator = CustomPagination()
     paginated_posts = paginator.paginate_queryset(posts, request)
@@ -151,7 +151,7 @@ def user_feed(request):
     return paginator.get_paginated_response(serializer.data)
 
 class FeedViewSet(viewsets.ViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
     
     def list(self, request):
         return user_feed(request)
@@ -275,3 +275,33 @@ class LikeViewSet(viewsets.ViewSet):
             'liked_comments': comment_serializer.data
         })
 
+class PostLikeAPIView(generics.GenericAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk=None):
+        post = get_object_or_404(Post, pk=pk)
+
+        like, created = Like.objects.get_or_create(
+            user = request.user,
+            post = post
+        )
+        if created:
+            if post.author != request.user:
+                Notification.objects.create(
+                    recipient = post.author,
+                    actor = request.user,
+                    verb = 'like_post',
+                    target = post
+                )
+            return Response({
+                'liked': True,
+                'likes_count': post.likes_count,
+                'message': 'Post liked successfully!'
+            }, status=status.HTTP_201_CREATED)
+        else:
+            like.delete()
+            return Response({
+                'liked': False,
+                'likes_count': post.likes_count,
+                'message': 'Post unliked successfully!'
+            }, status=status.HTTP_200_OK)
