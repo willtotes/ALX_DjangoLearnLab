@@ -11,6 +11,10 @@ urlpatterns = [
     path('api/login/', views.login_user, name='login_api'),
     path('api/profile/', views.user_profile, name='profile_api'),
     path('api/logout/', views.logout_user, name='logout_api'),
+
+    path('follow/<int:user_id>/', views.follow_user, name='follow'),
+    path('unfollow/<int:user_id>/', views.unfollow_user, name='unfollow'),
+
     path('api/follow/', views.follow_user, name='follow_api'),
     path('api/unfollow/', views.unfollow_user, name='unfollow_api'),
     path('api/followers/', views.get_followers, name='followers_api'),
