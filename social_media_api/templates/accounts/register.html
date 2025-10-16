@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block title %}Register - Social Media API{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card auth-form">
+            <div class="card-body">
+                <h2 class="card-title text-center mb-4">
+                    <i class="fas fa-user-plus me-2"></i>Register
+                </h2>
+                
+                <form id="register-form">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="first_name" class="form-label">First Name</label>
+                            <input type="text" class="form-control" id="first_name" name="first_name">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="last_name" class="form-label">Last Name</label>
+                            <input type="text" class="form-control" id="last_name" name="last_name">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username *</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email *</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password *</label>
+                        <input type="password" class="form-control" id="password" name="password" required minlength="8">
+                        <div class="form-text">Password must be at least 8 characters long.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password2" class="form-label">Confirm Password *</label>
+                        <input type="password" class="form-control" id="password2" name="password2" required>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <span id="register-text">Create Account</span>
+                            <div id="register-spinner" class="loading-spinner d-none"></div>
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="text-center mt-3">
+                    <p>Already have an account? <a href="{% url 'login' %}">Login here</a></p>
+                </div>
+                
+                <div id="register-message" class="alert d-none mt-3"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    $('#register-form').on('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            username: $('#username').val(),
+            email: $('#email').val(),
+            password: $('#password').val(),
+            password2: $('#password2').val(),
+            first_name: $('#first_name').val(),
+            last_name: $('#last_name').val()
+        };
+        
+        $('#register-text').addClass('d-none');
+        $('#register-spinner').removeClass('d-none');
+        
+        $.ajax({
+            url: '/api/auth/register/',
+            type: 'POST',
+            data: JSON.stringify(formData),
+            contentType: 'application/json',
+            success: function(response) {
+                localStorage.setItem('auth_token', response.token);
+                localStorage.setItem('user', JSON.stringify(response.user));
+                window.location.href = "{% url 'feed' %}";
+            },
+            error: function(xhr) {
+                $('#register-text').removeClass('d-none');
+                $('#register-spinner').addClass('d-none');
+                
+                let message = 'Registration failed. Please try again.';
+                if (xhr.responseJSON) {
+                    message = Object.values(xhr.responseJSON).flat().join(' ');
+                }
+                
+                $('#register-message')
+                    .removeClass('d-none alert-success')
+                    .addClass('alert-danger')
+                    .text(message);
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+
+{% block title %}Notifications - Social Media API{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Notifications</h2>
+            <button id="mark-all-read" class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-check-double me-1"></i>Mark All as Read
+            </button>
+        </div>
+
+        <div class="card">
+            <div class="card-body p-0">
+                <div id="notifications-list">
+                    <div class="text-center py-5">
+                        <div class="loading-spinner mx-auto"></div>
+                        <p class="text-muted mt-2">Loading notifications...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="load-more-container" class="text-center mt-4 d-none">
+            <button id="load-more-btn" class="btn btn-outline-primary">
+                Load More Notifications
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentPage = 1;
+let hasMoreNotifications = true;
+
+function loadNotifications(page = 1) {
+    const token = localStorage.getItem('auth_token');
+    
+    $.ajax({
+        url: `/notifications/api/?page=${page}`, 
+        type: 'GET',
+        headers: {
+            'Authorization': `Token ${token}`
+        },
+        success: function(response) {
+            if (page === 1) {
+                $('#notifications-list').empty();
+            }
+            
+            if (response.results && response.results.length > 0) {
+                response.results.forEach(notification => renderNotification(notification));
+                
+                updateNotificationBadge();
+                
+                hasMoreNotifications = response.next !== null;
+                if (hasMoreNotifications) {
+                    $('#load-more-container').removeClass('d-none');
+                } else {
+                    $('#load-more-container').addClass('d-none');
+                }
+            } else {
+                $('#notifications-list').html(`
+                    <div class="text-center py-5">
+                        <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
+                        <h5>No notifications</h5>
+                        <p class="text-muted">You're all caught up!</p>
+                    </div>
+                `);
+            }
+        },
+        error: function() {
+            $('#notifications-list').html(`
+                <div class="alert alert-danger m-3">
+                    Failed to load notifications. Please try again.
+                </div>
+            `);
+        }
+    });
+}
+
+function renderNotification(notification) {
+    const message = getNotificationMessage(notification);
+    const notificationHtml = `
+        <div class="notification-item ${notification.read ? '' : 'unread'}" data-notification-id="${notification.id}">
+            <div class="d-flex align-items-start">
+                <img src="/static/images/default-avatar.png" alt="${notification.actor.username}" class="notification-avatar me-3">
+                <div class="flex-grow-1">
+                    <p class="mb-1">${message}</p>
+                    <small class="text-muted">${new Date(notification.created_at).toLocaleString()}</small>
+                </div>
+                ${!notification.read ? `
+                    <button class="btn btn-sm btn-outline-primary mark-read-btn" data-notification-id="${notification.id}">
+                        Mark as Read
+                    </button>
+                ` : ''}
+            </div>
+        </div>
+    `;
+    
+    $('#notifications-list').append(notificationHtml);
+}
+
+function getNotificationMessage(notification) {
+    const actor = notification.actor.username;
+    
+    switch (notification.verb) {
+        case 'follow':
+            return `<strong>${actor}</strong> started following you`;
+        case 'like_post':
+            return `<strong>${actor}</strong> liked your post`;
+        case 'like_comment':
+            return `<strong>${actor}</strong> liked your comment`;
+        case 'comment':
+            return `<strong>${actor}</strong> commented on your post`;
+        case 'mention':
+            return `<strong>${actor}</strong> mentioned you in a post`;
+        default:
+            return `New notification from <strong>${actor}</strong>`;
+    }
+}
+
+function updateNotificationBadge() {
+    const token = localStorage.getItem('auth_token');
+    
+    $.ajax({
+        url: '/notifications/api/count/',
+        type: 'GET',
+        headers: {
+            'Authorization': `Token ${token}`
+        },
+        success: function(response) {
+            const $badge = $('#notification-badge');
+            
+            if (response.unread_count > 0) {
+                $badge.text(response.unread_count).removeClass('d-none');
+            } else {
+                $badge.addClass('d-none');
+            }
+        }
+    });
+}
+
+$(document).ready(function() {
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+        window.location.href = "{% url 'login' %}";
+        return;
+    }
+    
+    loadNotifications();
+    updateNotificationBadge();
+    
+    $('#mark-all-read').on('click', function() {
+        $.ajax({
+            url: '/notifications/api/mark_all_read/',
+            type: 'POST',
+            headers: {
+                'Authorization': `Token ${token}`
+            },
+            success: function() {
+                loadNotifications(); 
+                updateNotificationBadge();
+            },
+            error: function() {
+                alert('Failed to mark all as read');
+            }
+        });
+    });
+    
+    $(document).on('click', '.mark-read-btn', function() {
+        const notificationId = $(this).data('notification-id');
+        
+        $.ajax({
+            url: `/notifications/api/${notificationId}/mark_read/`,
+            type: 'POST',
+            headers: {
+                'Authorization': `Token ${token}`
+            },
+            success: function() {
+                $(`[data-notification-id="${notificationId}"]`).removeClass('unread');
+                $(this).remove();
+                updateNotificationBadge();
+            },
+            error: function() {
+                alert('Failed to mark notification as read');
+            }
+        });
+    });
+    
+    $('#load-more-btn').on('click', function() {
+        currentPage++;
+        loadNotifications(currentPage);
+    });
+});
+</script>
+{% endblock %}

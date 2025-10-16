@@ -1,0 +1,269 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile - {{ user.username }}{% endblock %}
+
+{% block content %}
+<div class="profile-header">
+    <div class="container text-center">
+        <img src="/static/images/default-avatar.png" alt="Profile" class="profile-avatar">
+        <h1 id="profile-username">{{ user.username }}</h1>
+        <p id="profile-bio" class="lead">{{ user.bio|default:"No bio yet" }}</p>
+        <div class="row justify-content-center">
+            <div class="col-auto">
+                <span class="stats-number">{{ user.followers_count|default:0 }}</span>
+                <small class="stats-label">Followers</small>
+            </div>
+            <div class="col-auto">
+                <span class="stats-number">{{ user.following_count|default:0 }}</span>
+                <small class="stats-label">Following</small>
+            </div>
+            <div class="col-auto">
+                <span class="stats-number">{{ user.posts_count|default:0 }}</span>
+                <small class="stats-label">Posts</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Edit Profile</h5>
+                </div>
+                <div class="card-body">
+                    <form id="edit-profile-form">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="edit-first-name" class="form-label">First Name</label>
+                            <input type="text" class="form-control" id="edit-first-name" value="{{ user.first_name|default:'' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-last-name" class="form-label">Last Name</label>
+                            <input type="text" class="form-control" id="edit-last-name" value="{{ user.last_name|default:'' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-bio" class="form-label">Bio</label>
+                            <textarea class="form-control" id="edit-bio" rows="3">{{ user.bio|default:'' }}</textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Update Profile</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <ul class="nav nav-tabs card-header-tabs" id="follow-tabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="followers-tab" data-bs-toggle="tab" data-bs-target="#followers" type="button">
+                                Followers
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="following-tab" data-bs-toggle="tab" data-bs-target="#following" type="button">
+                                Following
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body">
+                    <div class="tab-content" id="follow-tab-content">
+                        <div class="tab-pane fade show active" id="followers">
+                            <div id="followers-list">
+                
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="following">
+                            <div id="following-list">
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">My Posts</h5>
+                </div>
+                <div class="card-body">
+                    <div id="user-posts">
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    loadFollowers();
+    loadFollowing();
+    loadUserPosts();
+
+    $('#edit-profile-form').on('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            first_name: $('#edit-first-name').val(),
+            last_name: $('#edit-last-name').val(),
+            bio: $('#edit-bio').val()
+        };
+        
+        const token = localStorage.getItem('auth_token');
+        
+        $.ajax({
+            url: '/api/auth/profile/',
+            type: 'PUT',
+            headers: {
+                'Authorization': `Token ${token}`,
+                'Content-Type': 'application/json'
+            },
+            data: JSON.stringify(formData),
+            success: function(response) {
+                alert('Profile updated successfully!')
+                $('#profile-username').text(response.username);
+                $('#profile-bio').text(response.bio || 'No bio yet');
+            },
+            error: function() {
+                alert('Failed to update profile');
+            }
+        });
+    });
+});
+
+function loadFollowers() {
+    const token = localStorage.getItem('auth_token');
+    
+    $.ajax({
+        url: '/api/auth/followers/',
+        type: 'GET',
+        headers: {
+            'Authorization': `Token ${token}`
+        },
+        success: function(response) {
+            $('#followers-list').empty();
+            
+            if (response.length > 0) {
+                response.forEach(user => {
+                    const userHtml = `
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <div class="d-flex align-items-center">
+                                <img src="/static/images/default-avatar.png" alt="${user.username}" class="post-avatar">
+                                <span>${user.username}</span>
+                            </div>
+                        </div>
+                    `;
+                    $('#followers-list').append(userHtml);
+                });
+            } else {
+                $('#followers-list').html('<p class="text-muted">No followers yet</p>');
+            }
+        }
+    });
+}
+
+function loadFollowing() {
+    const token = localStorage.getItem('auth_token');
+    
+    $.ajax({
+        url: '/api/auth/following/',
+        type: 'GET',
+        headers: {
+            'Authorization': `Token ${token}`
+        },
+        success: function(response) {
+            $('#following-list').empty();
+            
+            if (response.length > 0) {
+                response.forEach(user => {
+                    const userHtml = `
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <div class="d-flex align-items-center">
+                                <img src="/static/images/default-avatar.png" alt="${user.username}" class="post-avatar">
+                                <span>${user.username}</span>
+                            </div>
+                            <button class="btn btn-sm btn-outline-danger" onclick="unfollowUser(${user.id})">
+                                Unfollow
+                            </button>
+                        </div>
+                    `;
+                    $('#following-list').append(userHtml);
+                });
+            } else {
+                $('#following-list').html('<p class="text-muted">Not following anyone yet</p>');
+            }
+        }
+    });
+}
+
+function unfollowUser(userId) {
+    const token = localStorage.getItem('auth_token');
+    
+    $.ajax({
+        url: '/api/auth/unfollow/',
+        type: 'POST',
+        headers: {
+            'Authorization': `Token ${token}`,
+            'Content-Type': 'application/json'
+        },
+        data: JSON.stringify({ user_id: userId }),
+        success: function(response) {
+            loadFollowing();
+            loadFollowers();
+        },
+        error: function() {
+            alert('Failed to unfollow user');
+        }
+    });
+}
+
+function loadUserPosts() {
+    const token = localStorage.getItem('auth_token');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    
+    $.ajax({
+        url: `/api/posts/?author=${user.username}`,
+        type: 'GET',
+        headers: {
+            'Authorization': `Token ${token}`
+        },
+        success: function(response) {
+            $('#user-posts').empty();
+            
+            if (response.results && response.results.length > 0) {
+                response.results.forEach(post => {
+                    const postHtml = `
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                ${post.title ? `<h5>${post.title}</h5>` : ''}
+                                <p>${post.content}</p>
+                                <small class="text-muted">${new Date(post.created_at).toLocaleString()}</small>
+                                <div class="mt-2">
+                                    <span class="badge bg-primary">${post.likes_count} likes</span>
+                                    <span class="badge bg-secondary ms-1">${post.comments_count} comments</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    $('#user-posts').append(postHtml);
+                });
+            } else {
+                $('#user-posts').html(`
+                    <div class="text-center py-4">
+                        <i class="fas fa-edit fa-2x text-muted mb-3"></i>
+                        <p class="text-muted">No posts yet. Create your first post!</p>
+                    </div>
+                `);
+            }
+        }
+    });
+}
+</script>
+{% endblock %}

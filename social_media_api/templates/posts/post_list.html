@@ -1,0 +1,313 @@
+
+{% extends 'base.html' %}
+
+{% block title %}All Posts - Social Media API{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>All Posts</h2>
+            <div class="btn-group">
+                <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    Sort By
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#" data-sort="-created_at">Newest First</a></li>
+                    <li><a class="dropdown-item" href="#" data-sort="created_at">Oldest First</a></li>
+                    <li><a class="dropdown-item" href="#" data-sort="-likes_count">Most Popular</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div id="posts-list">
+            <div class="text-center py-4">
+                <div class="loading-spinner mx-auto"></div>
+                <p class="text-muted mt-2">Loading posts...</p>
+            </div>
+        </div>
+
+        <div id="load-more-container" class="text-center mt-4 d-none">
+            <button id="load-more-btn" class="btn btn-outline-primary">
+                Load More Posts
+            </button>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">Filters</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="author-filter" class="form-label">Search by Author</label>
+                    <input type="text" class="form-control" id="author-filter" placeholder="Enter username...">
+                </div>
+                <div class="mb-3">
+                    <label for="search-filter" class="form-label">Search Content</label>
+                    <input type="text" class="form-control" id="search-filter" placeholder="Search in posts...">
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="liked-filter">
+                    <label class="form-check-label" for="liked-filter">
+                        Show only my liked posts
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentPage = 1;
+let hasMorePosts = true;
+let currentSort = '-created_at';
+let authorFilter = '';
+let searchFilter = '';
+let likedFilter = false;
+
+function loadPosts(page = 1) {
+    const token = localStorage.getItem('auth_token');
+    let url = `/api/posts/?page=${page}&ordering=${currentSort}`;
+    
+    if (authorFilter) {
+        url += `&author=${authorFilter}`;
+    }
+    if (searchFilter) {
+        url += `&search=${searchFilter}`;
+    }
+    if (likedFilter) {
+        url += `&liked=true`;
+    }
+    
+    $.ajax({
+        url: url,
+        type: 'GET',
+        headers: {
+            'Authorization': `Token ${token}`
+        },
+        success: function(response) {
+            if (page === 1) {
+                $('#posts-list').empty();
+            }
+            
+            if (response.results && response.results.length > 0) {
+                response.results.forEach(post => renderPost(post));
+                
+                hasMorePosts = response.next !== null;
+                if (hasMorePosts) {
+                    $('#load-more-container').removeClass('d-none');
+                } else {
+                    $('#load-more-container').addClass('d-none');
+                }
+            } else {
+                $('#posts-list').html(`
+                    <div class="text-center py-5">
+                        <i class="fas fa-newspaper fa-3x text-muted mb-3"></i>
+                        <h5>No posts found</h5>
+                        <p class="text-muted">Try adjusting your filters or create a new post!</p>
+                    </div>
+                `);
+            }
+        },
+        error: function() {
+            $('#posts-list').html(`
+                <div class="alert alert-danger">
+                    Failed to load posts. Please try again.
+                </div>
+            `);
+        }
+    });
+}
+
+function renderPost(post) {
+    const postHtml = `
+        <div class="card post-card mb-4" data-post-id="${post.id}">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <img src="/static/images/default-avatar.png" alt="${post.author.username}" class="post-avatar">
+                    <div class="ms-3">
+                        <h6 class="mb-0">${post.author.username}</h6>
+                        <small class="text-muted">${new Date(post.created_at).toLocaleString()}</small>
+                    </div>
+                </div>
+                
+                ${post.title ? `<h5 class="card-title">${post.title}</h5>` : ''}
+                <p class="card-text">${post.content}</p>
+                
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div>
+                        <button class="btn btn-sm ${post.is_liked ? 'btn-danger' : 'btn-outline-danger'}" onclick="likePost(${post.id})">
+                            <i class="fas fa-heart"></i>
+                            <span>${post.likes_count}</span>
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary ms-2" onclick="showComments(${post.id})">
+                            <i class="fas fa-comment"></i>
+                            <span>${post.comments_count}</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="post-comments mt-3 border-top pt-3 d-none" id="comments-${post.id}">
+                    <div class="mb-3">
+                        <form class="comment-form" onsubmit="addComment(event, ${post.id})">
+                            <div class="input-group">
+                                <input type="text" class="form-control" placeholder="Write a comment..." required>
+                                <button class="btn btn-primary" type="submit">Post</button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="comments-list" id="comments-list-${post.id}">
+                        <!-- Comments will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    $('#posts-list').append(postHtml);
+}
+
+function likePost(postId) {
+    const token = localStorage.getItem('auth_token');
+    const $btn = $(`[data-post-id="${postId}"] .btn`);
+    
+    $.ajax({
+        url: `/api/likes/post/${postId}/`,
+        type: 'POST',
+        headers: {
+            'Authorization': `Token ${token}`
+        },
+        success: function(response) {
+            const $icon = $btn.find('i');
+            const $count = $btn.find('span');
+            
+            if (response.liked) {
+                $btn.removeClass('btn-outline-danger').addClass('btn-danger');
+            } else {
+                $btn.removeClass('btn-danger').addClass('btn-outline-danger');
+            }
+            $count.text(response.likes_count);
+        },
+        error: function() {
+            alert('Failed to like post');
+        }
+    });
+}
+
+function showComments(postId) {
+    const $comments = $(`#comments-${postId}`);
+    const $commentsList = $(`#comments-list-${postId}`);
+    
+    if ($comments.hasClass('d-none')) {
+        const token = localStorage.getItem('auth_token');
+        
+        $.ajax({
+            url: `/api/posts/${postId}/comments/`,
+            type: 'GET',
+            headers: {
+                'Authorization': `Token ${token}`
+            },
+            success: function(response) {
+                $commentsList.empty();
+                
+                if (response.results && response.results.length > 0) {
+                    response.results.forEach(comment => {
+                        const commentHtml = `
+                            <div class="comment mb-3">
+                                <div class="d-flex align-items-center mb-2">
+                                    <img src="/static/images/default-avatar.png" alt="${comment.author.username}" class="comment-avatar">
+                                    <div class="ms-2">
+                                        <span class="comment-user fw-bold">${comment.author.username}</span>
+                                        <small class="comment-time text-muted ms-2">${new Date(comment.created_at).toLocaleString()}</small>
+                                    </div>
+                                </div>
+                                <p class="comment-text mb-0">${comment.content}</p>
+                            </div>
+                        `;
+                        $commentsList.append(commentHtml);
+                    });
+                } else {
+                    $commentsList.html('<p class="text-muted">No comments yet</p>');
+                }
+            }
+        });
+        
+        $comments.removeClass('d-none');
+    } else {
+        $comments.addClass('d-none');
+    }
+}
+
+function addComment(event, postId) {
+    event.preventDefault();
+    const $form = $(event.target);
+    const content = $form.find('input').val();
+    const token = localStorage.getItem('auth_token');
+    
+    $.ajax({
+        url: '/api/comments/',
+        type: 'POST',
+        headers: {
+            'Authorization': `Token ${token}`,
+            'Content-Type': 'application/json'
+        },
+        data: JSON.stringify({
+            post: postId,
+            content: content
+        }),
+        success: function(response) {
+            $form.find('input').val('');
+            showComments(postId); 
+        },
+        error: function() {
+            alert('Failed to add comment');
+        }
+    });
+}
+
+$(document).ready(function() {
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+        window.location.href = "{% url 'login' %}";
+        return;
+    }
+    
+    loadPosts();
+    
+    $('#load-more-btn').on('click', function() {
+        currentPage++;
+        loadPosts(currentPage);
+    });
+    
+    $('#author-filter').on('input', function() {
+        authorFilter = $(this).val();
+        currentPage = 1;
+        loadPosts();
+    });
+    
+    $('#search-filter').on('input', function() {
+        searchFilter = $(this).val();
+        currentPage = 1;
+        loadPosts();
+    });
+    
+    $('#liked-filter').on('change', function() {
+        likedFilter = $(this).is(':checked');
+        currentPage = 1;
+        loadPosts();
+    });
+    
+    $('.dropdown-item[data-sort]').on('click', function(e) {
+        e.preventDefault();
+        currentSort = $(this).data('sort');
+        currentPage = 1;
+        loadPosts();
+        $('.dropdown-toggle').text($(this).text());
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block title %}Social Media API - Connect with Friends{% endblock %}
+
+{% block content %}
+{% load static %}
+<div class="row align-items-center min-vh-50 py-5">
+    <div class="col-lg-6">
+        <h1 class="display-4 fw-bold text-primary mb-4">
+            Connect with Friends and the World
+        </h1>
+        <p class="lead mb-4">
+            Share your thoughts, follow interesting people, and discover amazing content 
+            on our social media platform built with Django REST Framework.
+        </p>
+        <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+            {% if user.is_authenticated %}
+                <a href="{% url 'feed' %}" class="btn btn-primary btn-lg px-4 me-md-2">
+                    Go to Feed <i class="fas fa-arrow-right ms-2"></i>
+                </a>
+            {% else %}
+                <a href="{% url 'register' %}" class="btn btn-primary btn-lg px-4 me-md-2">
+                    Get Started <i class="fas fa-user-plus ms-2"></i>
+                </a>
+                <a href="{% url 'login' %}" class="btn btn-outline-secondary btn-lg px-4">
+                    Login <i class="fas fa-sign-in-alt ms-2"></i>
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-lg-6 text-center">
+        <div class="position-relative">
+            <div class="card shadow-lg" style="transform: rotate(3deg);">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <img src="/static/images/default-avatar.png" alt="User" class="post-avatar">
+                        <div>
+                            <h6 class="mb-0">John Doe</h6>
+                            <small class="text-muted">2 hours ago</small>
+                        </div>
+                    </div>
+                    <h5>Just discovered this amazing platform!</h5>
+                    <p class="mb-0">The API is so well designed and the interface is beautiful. Can't wait to explore more features!</p>
+                    <div class="post-actions mt-3">
+                        <button class="post-action-btn">
+                            <i class="fas fa-heart"></i> 24
+                        </button>
+                        <button class="post-action-btn">
+                            <i class="fas fa-comment"></i> 8
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-4 text-center mb-4">
+        <div class="card h-100 border-0">
+            <div class="card-body">
+                <i class="fas fa-share-alt fa-3x text-primary mb-3"></i>
+                <h4>Share Posts</h4>
+                <p class="text-muted">Create and share posts with your followers. Express yourself with text and images.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 text-center mb-4">
+        <div class="card h-100 border-0">
+            <div class="card-body">
+                <i class="fas fa-users fa-3x text-success mb-3"></i>
+                <h4>Follow Users</h4>
+                <p class="text-muted">Follow interesting people and build your network. Discover new content in your personalized feed.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 text-center mb-4">
+        <div class="card h-100 border-0">
+            <div class="card-body">
+                <i class="fas fa-bell fa-3x text-warning mb-3"></i>
+                <h4>Get Notifications</h4>
+                <p class="text-muted">Stay updated with real-time notifications for likes, comments, and new followers.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

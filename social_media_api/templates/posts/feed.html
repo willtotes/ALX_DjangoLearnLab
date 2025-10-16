@@ -1,0 +1,394 @@
+{% extends 'base.html' %}
+
+{% block title %}Feed - Social Media API{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Create a Post</h5>
+                <form id="create-post-form">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <input type="text" class="form-control" id="post-title" placeholder="Title (optional)" name="title">
+                    </div>
+                    <div class="mb-3">
+                        <textarea class="form-control" id="post-content" rows="3" placeholder="What's on your mind?" name="content" required></textarea>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <button type="button" class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-image"></i> Image
+                            </button>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <span id="post-text">Post</span>
+                            <div id="post-spinner" class="loading-spinner d-none"></div>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="posts-feed">
+            <div class="text-center py-4">
+                <div class="loading-spinner mx-auto"></div>
+                <p class="text-muted mt-2">Loading posts...</p>
+            </div>
+        </div>
+
+        <div id="load-more-container" class="text-center mt-4 d-none">
+            <button id="load-more-btn" class="btn btn-outline-primary">
+                Load More Posts
+            </button>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-body text-center">
+                <img src="/static/images/default-avatar.png" alt="Profile" class="profile-avatar mb-3">
+                <h5 id="sidebar-username">User</h5>
+                <p class="text-muted" id="sidebar-bio">Loading...</p>
+                <div class="row text-center">
+                    <div class="col-4">
+                        <span class="stats-number" id="posts-count">0</span>
+                        <small class="stats-label">Posts</small>
+                    </div>
+                    <div class="col-4">
+                        <span class="stats-number" id="followers-count">0</span>
+                        <small class="stats-label">Followers</small>
+                    </div>
+                    <div class="col-4">
+                        <span class="stats-number" id="following-count">0</span>
+                        <small class="stats-label">Following</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Who to Follow</h6>
+            </div>
+            <div class="card-body">
+                <div id="suggestions-list">
+                    <div class="text-center">
+                        <div class="loading-spinner mx-auto"></div>
+                        <p class="text-muted mt-2">Loading suggestions...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentPage = 1;
+let hasMorePosts = true;
+
+function loadUserProfile() {
+    const token = localStorage.getItem('auth_token');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    
+    $('#sidebar-username').text(user.username || 'User');
+    $('#sidebar-bio').text(user.bio || 'No bio yet');
+    $('#posts-count').text(user.posts_count || 0);
+    $('#followers-count').text(user.followers_count || 0);
+    $('#following-count').text(user.following_count || 0);
+}
+
+function loadPosts(page = 1) {
+    const token = localStorage.getItem('auth_token');
+    
+    $.ajax({
+        url: `/api/feed/?page=${page}`,
+        type: 'GET',
+        headers: {
+            'Authorization': `Token ${token}`
+        },
+        success: function(response) {
+            if (page === 1) {
+                $('#posts-feed').empty();
+            }
+            
+            if (response.results && response.results.length > 0) {
+                response.results.forEach(post => renderPost(post));
+                
+                hasMorePosts = response.next !== null;
+                if (hasMorePosts) {
+                    $('#load-more-container').removeClass('d-none');
+                } else {
+                    $('#load-more-container').addClass('d-none');
+                }
+            } else {
+                $('#posts-feed').html(`
+                    <div class="text-center py-5">
+                        <i class="fas fa-newspaper fa-3x text-muted mb-3"></i>
+                        <h5>No posts yet</h5>
+                        <p class="text-muted">Follow some users to see their posts here!</p>
+                    </div>
+                `);
+            }
+        },
+        error: function() {
+            $('#posts-feed').html(`
+                <div class="alert alert-danger">
+                    Failed to load posts. Please try again.
+                </div>
+            `);
+        }
+    });
+}
+
+function renderPost(post) {
+    const postHtml = `
+        <div class="card post-card" data-post-id="${post.id}">
+            <div class="post-header">
+                <img src="/static/images/default-avatar.png" alt="${post.author.username}" class="post-avatar">
+                <div class="post-user-info">
+                    <h6>${post.author.username}</h6>
+                    <small class="post-time">${new Date(post.created_at).toLocaleString()}</small>
+                </div>
+            </div>
+            <div class="post-content">
+                ${post.title ? `<h5 class="post-title">${post.title}</h5>` : ''}
+                <p class="post-text">${post.content}</p>
+            </div>
+            <div class="post-actions">
+                <button class="post-action-btn ${post.is_liked ? 'liked' : ''}" onclick="likePost(${post.id})">
+                    <i class="fas fa-heart"></i>
+                    <span>${post.likes_count}</span>
+                </button>
+                <button class="post-action-btn" onclick="showComments(${post.id})">
+                    <i class="fas fa-comment"></i>
+                    <span>${post.comments_count}</span>
+                </button>
+            </div>
+            <div class="post-comments p-3 border-top d-none" id="comments-${post.id}">
+                <div class="mb-3">
+                    <form class="comment-form" onsubmit="addComment(event, ${post.id})">
+                        <div class="input-group">
+                            <input type="text" class="form-control" placeholder="Write a comment..." required>
+                            <button class="btn btn-primary" type="submit">Post</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="comments-list" id="comments-list-${post.id}">
+                    <!-- Comments will be loaded here -->
+                </div>
+            </div>
+        </div>
+    `;
+    
+    $('#posts-feed').append(postHtml);
+}
+
+function likePost(postId) {
+    const token = localStorage.getItem('auth_token');
+    const $btn = $(`[data-post-id="${postId}"] .post-action-btn:first`);
+    const $icon = $btn.find('i');
+    const $count = $btn.find('span');
+    
+    $.ajax({
+        url: `/api/likes/post/${postId}/`,
+        type: 'POST',
+        headers: {
+            'Authorization': `Token ${token}`
+        },
+        success: function(response) {
+            $btn.toggleClass('liked', response.liked);
+            $count.text(response.likes_count);
+        },
+        error: function() {
+            alert('Failed to like post');
+        }
+    });
+}
+
+$(document).ready(function() {
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+        window.location.href = "{% url 'login' %}";
+        return;
+    }
+    
+    loadUserProfile();
+    loadPosts();
+    loadSuggestions();
+    
+    $('#create-post-form').on('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            title: $('#post-title').val(),
+            content: $('#post-content').val()
+        };
+        
+        $('#post-text').addClass('d-none');
+        $('#post-spinner').removeClass('d-none');
+        
+        $.ajax({
+            url: '/api/posts/',
+            type: 'POST',
+            headers: {
+                'Authorization': `Token ${token}`,
+                'Content-Type': 'application/json'
+            },
+            data: JSON.stringify(formData),
+            success: function(response) {
+                $('#post-title').val('');
+                $('#post-content').val('');
+                $('#post-text').removeClass('d-none');
+                $('#post-spinner').addClass('d-none');
+
+                $('#posts-feed').prepend(renderPost(response));
+            },
+            error: function() {
+                $('#post-text').removeClass('d-none');
+                $('#post-spinner').addClass('d-none');
+                alert('Failed to create post');
+            }
+        });
+    });
+    
+    $('#load-more-btn').on('click', function() {
+        currentPage++;
+        loadPosts(currentPage);
+    });
+});
+
+function loadSuggestions() {
+    const token = localStorage.getItem('auth_token');
+    
+    $.ajax({
+        url: '/api/feed/suggestions/',
+        type: 'GET',
+        headers: {
+            'Authorization': `Token ${token}`
+        },
+        success: function(response) {
+            $('#suggestions-list').empty();
+            
+            if (response.length > 0) {
+                response.forEach(user => {
+                    const userHtml = `
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div class="d-flex align-items-center">
+                                <img src="/static/images/default-avatar.png" alt="${user.username}" class="post-avatar">
+                                <div>
+                                    <h6 class="mb-0">${user.username}</h6>
+                                </div>
+                            </div>
+                            <button class="btn btn-sm btn-outline-primary follow-btn" data-user-id="${user.id}">
+                                Follow
+                            </button>
+                        </div>
+                    `;
+                    $('#suggestions-list').append(userHtml);
+                });
+            } else {
+                $('#suggestions-list').html('<p class="text-muted">No suggestions available</p>');
+            }
+        }
+    });
+}
+
+$(document).on('click', '.follow-btn', function() {
+    const userId = $(this).data('user-id');
+    const $btn = $(this);
+    const token = localStorage.getItem('auth_token');
+    
+    $.ajax({
+        url: '/api/auth/follow/',
+        type: 'POST',
+        headers: {
+            'Authorization': `Token ${token}`,
+            'Content-Type': 'application/json'
+        },
+        data: JSON.stringify({ user_id: userId }),
+        success: function(response) {
+            $btn.text('Following').removeClass('btn-outline-primary').addClass('btn-primary');
+            loadUserProfile();
+        },
+        error: function() {
+            alert('Failed to follow user');
+        }
+    });
+});
+
+function showComments(postId) {
+    const $comments = $(`#comments-${postId}`);
+    const $commentsList = $(`#comments-list-${postId}`);
+    
+    if ($comments.hasClass('d-none')) {
+        const token = localStorage.getItem('auth_token');
+        
+        $.ajax({
+            url: `/api/posts/${postId}/comments/`,
+            type: 'GET',
+            headers: {
+                'Authorization': `Token ${token}`
+            },
+            success: function(response) {
+                $commentsList.empty();
+                
+                if (response.results && response.results.length > 0) {
+                    response.results.forEach(comment => {
+                        const commentHtml = `
+                            <div class="comment">
+                                <div class="comment-header">
+                                    <img src="/static/images/default-avatar.png" alt="${comment.author.username}" class="comment-avatar">
+                                    <div>
+                                        <span class="comment-user">${comment.author.username}</span>
+                                        <small class="comment-time">${new Date(comment.created_at).toLocaleString()}</small>
+                                    </div>
+                                </div>
+                                <p class="comment-text">${comment.content}</p>
+                            </div>
+                        `;
+                        $commentsList.append(commentHtml);
+                    });
+                } else {
+                    $commentsList.html('<p class="text-muted">No comments yet</p>');
+                }
+            }
+        });
+        
+        $comments.removeClass('d-none');
+    } else {
+        $comments.addClass('d-none');
+    }
+}
+
+function addComment(event, postId) {
+    event.preventDefault();
+    const $form = $(event.target);
+    const content = $form.find('input').val();
+    const token = localStorage.getItem('auth_token');
+    
+    $.ajax({
+        url: '/api/comments/',
+        type: 'POST',
+        headers: {
+            'Authorization': `Token ${token}`,
+            'Content-Type': 'application/json'
+        },
+        data: JSON.stringify({
+            post: postId,
+            content: content
+        }),
+        success: function(response) {
+            $form.find('input').val('');
+            showComments(postId); 
+        },
+        error: function() {
+            alert('Failed to add comment');
+        }
+    });
+}
+</script>
+{% endblock %}
